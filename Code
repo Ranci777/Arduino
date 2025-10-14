@@ -1,0 +1,87 @@
+//código com filtro mediana
+// C++ code com Filtro de Mediana
+// --- Pinos de Conexão ---
+const int pinoTrig = 7;
+const int pinoEcho = 6;
+// --- Configurações do Filtro ---
+const int NUMERO_DE_LEITURAS = 5; // Use um número ímpar (3, 5, 7...)
+// --- Variáveis Globais ---
+float distance = 0.0;
+int contadorMedidas = 1;
+bool medicoesFinalizadas = false;
+float leituras[NUMERO_DE_LEITURAS]; // Array para guardar as leituras
+do filtro
+// Função para ler a distância do sensor
+long readUltrasonicDistance(int triggerPin, int echoPin)
+{
+ pinMode(triggerPin, OUTPUT);
+ digitalWrite(triggerPin, LOW);
+ delayMicroseconds(2);
+ digitalWrite(triggerPin, HIGH);
+ delayMicroseconds(10);
+ digitalWrite(triggerPin, LOW);
+ pinMode(echoPin, INPUT);
+ long duracao = pulseIn(echoPin, HIGH, 25000); // Adicionado timeout
+de 25ms
+ if (duracao == 0) { // Se estourar o tempo, retorna 0
+ return 0;
+ }
+ return duracao;
+}
+// Função para ordenar um array (necessária para a mediana)
+void ordenarArray(float arr[], int tamanho) {
+ for (int i = 0; i < tamanho - 1; i++) {
+ for (int j = 0; j < tamanho - i - 1; j++) {
+ if (arr[j] > arr[j + 1]) {
+ float temp = arr[j];
+ arr[j] = arr[j + 1];
+ arr[j + 1] = temp;
+ }
+ }
+ }
+}
+void setup()
+{
+ Serial.begin(9600);
+ Serial.println("Iniciando medicao com Filtro de Mediana. Parada em
+150 leituras.");
+}
+void loop()
+{
+ if (contadorMedidas <= 150)
+ {
+ // 1. FAZ VÁRIAS LEITURAS RÁPIDAS
+ for (int i = 0; i < NUMERO_DE_LEITURAS; i++) {
+ leituras[i] = 0.01723 * readUltrasonicDistance(pinoTrig,
+pinoEcho);
+ delay(10); // Pequeno delay entre as leituras do filtro
+ }
+ // 2. ORDENA AS LEITURAS
+ ordenarArray(leituras, NUMERO_DE_LEITURAS);
+ // 3. PEGA O VALOR DO MEIO (A MEDIANA)
+ distance = leituras[NUMERO_DE_LEITURAS / 2];
+ // Se a distância for 0 (erro de leitura), ignora esta medição
+ if (distance > 0) {
+ // Imprime o resultado JÁ FILTRADO no Monitor Serial
+ Serial.print("Medida n° ");
+ Serial.print(contadorMedidas);
+ Serial.print(": Distancia: ");
+ Serial.print(distance);
+ Serial.println(" cm");
+
+ // Incrementa o contador SÓ SE a medição for válida
+ contadorMedidas++;
+ } else {
+ Serial.println("Leitura invalida (valor 0), tentando
+novamente...");
+ }
+
+ delay(100);
+ }
+ else if (medicoesFinalizadas == false)
+ {
+ Serial.println("---------------------------------");
+ Serial.println("150 medidas concluidas. Fim do processo.");
+ medicoesFinalizadas = true;
+ }
+}
